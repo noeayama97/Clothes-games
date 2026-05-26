@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Clothes Vocabulary Quiz</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #111827;
+            --cyan-glow: #22d3ee;
+            --emerald-correct: #10b981;
+            --rose-wrong: #ef4444;
+            --text-light: #f8fafc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .quiz-card {
+            width: 100%;
+            max-width: 500px;
+            background: var(--panel-bg);
+            border: 2px solid #1f2937;
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #9ca3af;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 10px;
+        }
+
+        .instruction {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-light);
+        }
+
+        /* CONTENEDOR VISUAL DIRECTO */
+        .image-viewer-box {
+            width: 240px;
+            height: 240px;
+            margin: 0 auto 25px auto;
+            background: white;
+            border: 3px solid var(--cyan-glow);
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Elemento que mostrará la imagen final */
+        #finalDisplayImg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            display: none; /* Se oculta hasta que una imagen cargue */
+        }
+
+        /* Mensaje de carga inicial */
+        #loadingMsg {
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 25px;
+        }
+
+        .opt-btn {
+            background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+            border: 2px solid #4b5563;
+            border-radius: 14px;
+            color: var(--text-light);
+            padding: 16px 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .opt-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--cyan-glow);
+        }
+
+        .opt-btn.correct {
+            background: linear-gradient(180deg, #059669 0%, #047857 100%) !important;
+            border-color: #10b981 !important;
+            color: white !important;
+        }
+
+        .opt-btn.wrong {
+            background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%) !important;
+            border-color: #ef4444 !important;
+            color: white !important;
+        }
+
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            border-top: 1px solid #1f2937;
+            padding-top: 20px;
+        }
+
+        .action-btn {
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: #9ca3af;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .action-btn:hover { background: #374151; color: white; }
+
+        .center-status { font-size: 1.1rem; font-weight: 600; color: #9ca3af; }
+
+        .results-screen { display: none; }
+        .score-display { font-size: 4rem; color: #10b981; font-weight: 900; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card">
+    <div id="game-core">
+        <div class="header-title">English Clothes Vocabulary Quiz</div>
+        <div class="instruction">What garment is shown in the image?</div>
+
+        <div class="image-viewer-box">
+            <div id="loadingMsg">Seeking image...</div>
+            <img src="" id="finalDisplayImg" alt="Garment Display">
+        </div>
+
+        <div class="options-grid" id="box-options"></div>
+
+        <div class="controls-bar">
+            <button class="action-btn" onclick="goPrevious()">&lt; Prev</button>
+            <div class="center-status" id="counter-lbl">Item 1 of 42</div>
+            <button class="action-btn" onclick="goNext()">Next &gt;</button>
+        </div>
+    </div>
+
+    <div class="results-screen" id="end-core">
+        <div class="header-title">Quiz Completed!</div>
+        <div class="instruction">Final Score</div>
+        <div class="score-display" id="final-marks">0 / 42</div>
+        <button class="opt-btn" style="width: 100%;" onclick="resetQuiz()">Restart Quiz</button>
+    </div>
+</div>
+
+<script>
+    // BASE DE DATOS MAPEADA (Se asume que los archivos individuales tienen guiones)
+    const clothesMasterList = [
+        { name: "Belt", base: "belt", bad: ["Tie", "Scarf", "Gloves"] },
+        { name: "Bikini", base: "bikini", bad: ["Dress", "Skirt", "Swimsuit"] },
+        { name: "Shirt", base: "shirt", bad: ["T-shirt", "Jacket", "Sweater"] },
+        { name: "Boots", base: "boots", bad: ["Shoes", "Slippers", "Socks"] },
+        { name: "Cap", base: "cap", bad: ["Hat", "Helmet", "Beanie"] },
+        { name: "Coat", base: "coat", bad: ["Vest", "Hoodie", "Blouse"] },
+        { name: "Dress", base: "dress", bad: ["Skirt", "Suit", "Trousers"] },
+        { name: "Gloves", base: "gloves", bad: ["Mittens", "Socks", "Sleeves"] },
+        { name: "Mittens", base: "mittens", bad: ["Gloves", "Scarf", "Socks"] },
+        { name: "Fingerless Gloves", base: "fingerless-gloves", bad: ["Gloves", "Rings", "Sleeves"] },
+        { name: "Hat", base: "hat", bad: ["Cap", "Beanie", "Helmet"] },
+        { name: "Hoodie", base: "hoodie", bad: ["Jacket", "Sweater", "Coat"] },
+        { name: "Denim Jacket", base: "denim-jacket", bad: ["Shirt", "Vest", "Cardigan"] },
+        { name: "Jeans", base: "jeans", bad: ["Shorts", "Trousers", "Leggings"] },
+        { name: "Overalls", base: "overalls", bad: ["Suit", "Dress", "Trousers"] },
+        { name: "Pyjamas", base: "pyjamas", bad: ["Suit", "Tracksuit", "Coat"] },
+        { name: "Underwear", base: "underwear", bad: ["Shorts", "Swimsuit", "Bikini"] },
+        { name: "Trousers", base: "trousers", bad: ["Jeans", "Shorts", "Leggings"] },
+        { name: "Raincoat", base: "raincoat", bad: ["Coat", "Jacket", "Hoodie"] },
+        { name: "Scarf", base: "scarf", bad: ["Tie", "Belt", "Gloves"] },
+        { name: "Shoes", base: "shoes", bad: ["Boots", "Slippers", "Sandals"] },
+        { name: "Shorts", base: "shorts", bad: ["Jeans", "Trousers", "Skirt"] },
+        { name: "Skirt", base: "skirt", bad: ["Dress", "Shorts", "Gown"] },
+        { name: "Socks", base: "socks", bad: ["Shoes", "Boots", "Gloves"] },
+        { name: "Suit", base: "suit", bad: ["Coat", "Trousers", "Uniform"] },
+        { name: "Sweater", base: "sweater", bad: ["Cardigan", "Hoodie", "T-shirt"] },
+        { name: "Swim Shorts", base: "swim-shorts", bad: ["Shorts", "Underwear", "Jeans"] },
+        { name: "Swimsuit", base: "swimsuit", bad: ["Bikini", "Dress", "Underwear"] },
+        { name: "Tie", base: "tie", bad: ["Scarf", "Belt", "Ribbon"] },
+        { name: "T-shirt", base: "t-shirt", bad: ["Shirt", "Blouse", "Vest"] },
+        { name: "Vest", base: "vest", bad: ["Jacket", "Coat", "Shirt"] },
+        { name: "Winter Coat", base: "winter-coat", bad: ["Raincoat", "Cardigan", "Blazer"] },
+        { name: "Cardigan", base: "cardigan", bad: ["Sweater", "Jacket", "Vest"] },
+        { name: "Sweater Vest", base: "sweater-vest", bad: ["Vest", "T-shirt", "Tie"] },
+        { name: "Baby Suit", base: "baby-suit", bad: ["Pyjamas", "Dress", "Shirt"] },
+        { name: "Diaper", base: "diaper", bad: ["Underwear", "Shorts", "Skirt"] },
+        { name: "Nightgown", base: "nightgown", bad: ["Dress", "Pyjamas", "Robes"] },
+        { name: "Dressing Gown", base: "dressing-gown", bad: ["Coat", "Pyjamas", "Raincoat"] },
+        { name: "Tights", base: "tights", bad: ["Socks", "Leggings", "Jeans"] },
+        { name: "Stockings", base: "stockings", bad: ["Socks", "Tights", "Boots"] },
+        { name: "Undershirt", base: "undershirt", bad: ["T-shirt", "Vest", "Blouse"] }
+    ];
+
+    let quizSet = [];
+    let activeIndex = 0;
+    let currentScore = 0;
+    let roundEvaluated = false;
+
+    // --- NUEVO SÚPER-CARGADOR ASÍNCRONO EN PARALELO ---
+    // Prueba todas las combinaciones al mismo tiempo sin depender del navegador
+    const fileFormats = ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'];
+
+    function resetQuiz() {
+        quizSet = [...clothesMasterList].sort(() => Math.random() - 0.5);
+        activeIndex = 0;
+        currentScore = 0;
+        document.getElementById('game-core').style.display = 'block';
+        document.getElementById('end-core').style.display = 'none';
+        renderActiveQuestion();
+    }
+
+    function renderActiveQuestion() {
+        roundEvaluated = false;
+        let currentItem = quizSet[activeIndex];
+        document.getElementById('counter-lbl').innerText = `Item ${activeIndex + 1} of ${quizSet.length}`;
+
+        const finalImg = document.getElementById('finalDisplayImg');
+        const loadMsg = document.getElementById('loadingMsg');
+
+        // Estado inicial de carga
+        finalImg.style.display = 'none';
+        loadMsg.style.display = 'block';
+        loadMsg.innerText = 'Seeking ' + currentItem.name + '...';
+        finalImg.src = ''; 
+
+        // Bandera para asegurar que solo la primera imagen exitosa se muestre
+        let found = false;
+
+        // --- SISTEMA ASÍNCRONO DE BÚSQUEDA AGRESIVA (Fuerza Bruta Paralela) ---
+        // Prueba combinaciones con guiones y con espacios AL MISMO TIEMPO
+        const basesToTry = [currentItem.base, currentItem.base.replace(/-/g, ' ')];
+
+        basesToTry.forEach(baseName => {
+            fileFormats.forEach(ext => {
+                const targetUrl = 'img/' + baseName + ext;
+                
+                // Crea un objeto de imagen temporal e invisible en memoria
+                let testImg = new Image();
+                testImg.src = targetUrl;
+
+                // Si esta combinación funciona asíncronamente
+                testImg.onload = function() {
+                    // Si fuimos los primeros en encontrarla
+                    if (!found) {
+                        found = true;
+                        // Inyecta el éxito asíncrono en la visualización final
+                        finalImg.src = targetUrl;
+                        finalImg.style.display = 'block';
+                        loadMsg.style.display = 'none';
+                    }
+                };
+
+                // Si esta combinación falla asíncronamente, no hacemos nada (el loop sigue)
+                testImg.onerror = function() {
+                    // Si ya fallaron TODOS los intentos paralelos
+                    // (Esto es difícil de rastrear asíncronamente sin contadores complejos,
+                    //  pero el alt por defecto se activará si la imagen final se queda vacía)
+                };
+            });
+        });
+
+        // Temporizador de seguridad por si NINGUNA imagen carga tras 5 segundos
+        setTimeout(() => {
+            if (!found) {
+                loadMsg.innerText = "Error: Check image for '" + currentItem.base + "'";
+                finalImg.alt = "Image not found for '" + currentItem.base + "'";
+            }
+        }, 5000);
+
+
+        // Generar botones de respuestas mezcladas
+        let optionsArr = [currentItem.name, ...currentItem.bad].sort(() => Math.random() - 0.5);
+        const gridBox = document.getElementById('box-options');
+        gridBox.innerHTML = '';
+
+        optionsArr.forEach(textOpt => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.innerText = textOpt;
+            btn.onclick = () => evaluateChoice(btn, textOpt);
+            gridBox.appendChild(btn);
+        });
+    }
+
+    function evaluateChoice(clickedBtn, selectedValue) {
+        if (roundEvaluated) return;
+        roundEvaluated = true;
+
+        let correctValue = quizSet[activeIndex].name;
+
+        document.querySelectorAll('.opt-btn').forEach(btn => {
+            if (btn.innerText === correctValue) {
+                btn.classList.add('correct');
+            }
+        });
+
+        if (selectedValue === correctValue) {
+            currentScore++;
+        } else {
+            clickedBtn.classList.add('wrong');
+        }
+    }
+
+    function goNext() {
+        if (activeIndex < quizSet.length - 1) {
+            activeIndex++;
+            renderActiveQuestion();
+        } else {
+            document.getElementById('game-core').style.display = 'none';
+            document.getElementById('end-core').style.display = 'block';
+            document.getElementById('final-marks').innerText = `${currentScore} / ${quizSet.length}`;
+        }
+    }
+
+    function goPrevious() {
+        if (activeIndex > 0) {
+            activeIndex--;
+            renderActiveQuestion();
+        }
+    }
+
+    window.onload = resetQuiz;
+</script>
+</body>
+</html>
